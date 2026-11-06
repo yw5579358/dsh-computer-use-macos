@@ -1,0 +1,106 @@
+{
+  "name": "dsh-computer-use-macos",
+  "version": "0.1.0",
+  "description": "macOS Computer Use for DeepSeek Harness: native accessibility, screenshots and an opt-in CDP browser adapter with a familiar unified API",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./bridge": {
+      "types": "./lib/bridge.d.ts",
+      "default": "./lib/bridge.js"
+    },
+    "./browser": {
+      "types": "./lib/browser.d.ts",
+      "default": "./lib/browser.js"
+    },
+    "./package.json": "./package.json",
+    "./browser-bridge": {
+      "types": "./lib/browser-bridge.d.ts",
+      "default": "./lib/browser-bridge.js"
+    }
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "docs",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "SECURITY.md",
+    "CHANGELOG.md",
+    "assets"
+  ],
+  "engines": {
+    "node": ">=24.9.0",
+    "dsh": "0.2.2-rc.1"
+  },
+  "os": [
+    "darwin"
+  ],
+  "license": "MIT",
+  "author": "yw5579358",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yw5579358/dsh-computer-use-macos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yw5579358/dsh-computer-use-macos/issues"
+  },
+  "homepage": "https://github.com/yw5579358/dsh-computer-use-macos#readme",
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "computer-use",
+    "macos",
+    "accessibility",
+    "browser-automation"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:unit": "node --import tsx --test test/bridge.test.ts test/browser.test.ts test/browser-host.test.ts",
+    "test:browser": "node --import tsx --test test/browser.integration.test.ts",
+    "prepack": "npm run build",
+    "check": "npm run typecheck && npm test && npm run build",
+    "test:host": "node --import tsx --test test/browser-host.test.ts test/browser-host.integration.test.ts",
+    "test:native": "python3 scripts/test-native.py"
+  },
+  "dependencies": {
+    "playwright": "1.65.0",
+    "@deepseek-ai/dsh-util-values": "0.2.2-rc.1",
+    "@deepseek-ai/schemastery": "~3.19.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0",
+    "@deepseek-ai/dsh-cua": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-system-prompt": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-attachment": "0.2.2-rc.1"
+  },
+  "optionalDependencies": {
+    "@deepseek-ai/dsh-experimental-cua-macos": "0.2.2-rc.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0",
+    "@deepseek-ai/dsh-cua": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-system-prompt": "0.2.2-rc.1",
+    "@deepseek-ai/dsh": "0.2.2-rc.1",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-attachment": "0.2.2-rc.1"
+  }
+}
