@@ -32,6 +32,16 @@ await app.getAXState()
 
 原生截图已经通过 Host 附件流程进入模型上下文，返回对象保留字节和尺寸，不能重复上传。滚动使用 `scroll({x,y,deltaLinesX,deltaLinesY})`，不是 Codex 的页数签名。保留变量需使用持久 PTC 模式。快捷键和粘贴应先确认目标应用焦点。原始中文 HTML 在部分 AppKit 控件中存在编码限制，优先使用纯文本；详见 [实测范围](docs/testing.md)。
 
+## 插件发现
+
+在实验功能 **Custom plugin indexes** 中添加可信索引：
+
+```text
+https://raw.githubusercontent.com/yw5579358/dsh-computer-use-macos/codex/initial-release/plugin-index.json
+```
+
+索引将安装来源固定到测试过的 commit；这是自建社区索引，不是官方精选收录。
+
 ## 浏览器
 
 默认关闭。仅连接用户显式配置的 loopback CDP 浏览器，推荐独立临时 Profile。正式模型调用经过 Host 的 `computer_browser` 工具及 Harness 普通审批/日志流程。CDP 能访问该浏览器的所有标签，loopback 限制不等于站点级授权。详见 [浏览器配置](docs/browser.md)。

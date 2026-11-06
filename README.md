@@ -34,6 +34,16 @@ Built `lib/` files are committed, so Git installs do not require a prepare/insta
 
 Use a PTC session. The bundle mounts the native provider with `agentPreset: ptc` and retains the official authorization flow. This plugin does not silently switch existing sessions or their model. A GUI host that supports the CUA Client page exposes its permission controls; source/headless users must complete TCC permissions on the Mac itself.
 
+## Discover index
+
+For Harness's experimental **Custom plugin indexes**, add this explicitly trusted source:
+
+```text
+https://raw.githubusercontent.com/yw5579358/dsh-computer-use-macos/codex/initial-release/plugin-index.json
+```
+
+The format-1 index pins the tested plugin source to an immutable commit. This is a self-hosted community index, not an official curated listing.
+
 ## Use native apps
 
 In a persistent PTC execution:

@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "title": {
+    "en": "macOS Computer Use community plugin",
+    "zh": "macOS Computer Use 社区插件"
+  },
+  "plugins": [
+    {
+      "name": "dsh-computer-use-macos",
+      "title": {
+        "en": "Computer Use for macOS",
+        "zh": "macOS 电脑操作"
+      },
+      "description": {
+        "en": "Independent native app/window facade and opt-in Host-routed CDP browser control. Preview; Harness 0.2.2-rc.1 only.",
+        "zh": "独立应用/窗口 API 与可选经 Host 审批的 CDP 浏览器控制。预览版；仅支持 Harness 0.2.2-rc.1。"
+      },
+      "icon": "assets/icon.svg",
+      "author": "yw5579358",
+      "homepage": "https://github.com/yw5579358/dsh-computer-use-macos",
+      "repository": {
+        "url": "https://github.com/yw5579358/dsh-computer-use-macos"
+      },
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1793956077,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/yw5579358/dsh-computer-use-macos",
+            "commit": "fe0ba84aeea35c21e9c13ca5769952d12792d9c2"
+          },
+          "engines": {
+            "dsh": "0.2.2-rc.1"
+          }
+        }
+      ]
+    }
+  ]
+}
