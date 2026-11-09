@@ -23,6 +23,18 @@
       },
       "versions": [
         {
+          "version": "0.1.1",
+          "publishTimestamp": 1794188555,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/yw5579358/dsh-computer-use-macos",
+            "commit": "d3f46e669f3068c8c7812d48828fc636642390e8"
+          },
+          "engines": {
+            "dsh": "0.2.2-rc.1"
+          }
+        },
+        {
           "version": "0.1.0",
           "publishTimestamp": 1793956077,
           "source": {
