@@ -18,21 +18,24 @@ The official provider dependency ships signed, precompiled native helpers. This 
 
 ## Install
 
-From a reviewed checkout or a release tarball:
+### Desktop application
+
+Desktop manages its own profile. In **Plugins**, enable the experimental **Custom plugin indexes**, open **Discover**, and add the [JSON index below](#discover-index). Select this plugin, review the repository and pinned commit, choose **Install**, then **Enable now**. In **Settings → Agent presets**, choose **PTC mode** for new tasks. Existing conversations keep their previous preset.
+
+Alternatively, use the Desktop **Add plugin** dialog to select a reviewed release tarball or pinned Git source. Do not use `dsh plugin --profile desktop`: the CLI intentionally rejects the Electron-managed profile.
+
+### Non-Desktop CLI profiles
+
+For a separate CLI profile:
 
 ```sh
-dsh plugin --profile desktop add ./dsh-computer-use-macos-0.1.0.tgz
+dsh plugin --profile computer-demo add ./dsh-computer-use-macos-0.1.1.tgz
+# Or replace <commit> with the release's full reviewed SHA:
+dsh plugin --profile computer-demo add github:yw5579358/dsh-computer-use-macos#<commit>
+dsh --profile computer-demo --dump-config
 ```
 
-Or install a reviewed Git commit (replace `<commit>` with the release's full SHA):
-
-```sh
-dsh plugin --profile desktop add github:yw5579358/dsh-computer-use-macos#<commit>
-```
-
-Built `lib/` files are committed, so Git installs do not require a prepare/install script. Enable only one computer-use provider per profile; remove a competing provider before adding this bundle. Restart Harness when the host does not support hot reload.
-
-Use a PTC session. The bundle mounts the native provider with `agentPreset: ptc` and retains the official authorization flow. This plugin does not silently switch existing sessions or their model. A GUI host that supports the CUA Client page exposes its permission controls; source/headless users must complete TCC permissions on the Mac itself.
+Built `lib/` files are committed; there is no prepare/install script. Enable only one native computer-use provider per profile. The bundle mounts the official provider with `agentPreset: ptc`, preserving its authorization flow. It does not change existing conversations or grant macOS permissions. Restart the host if it does not support hot reload.
 
 ## Discover index
 
@@ -75,6 +78,8 @@ Important differences from the Codex interface:
 
 ## Optional browser tool
 
+DOM control is already implemented. Start the included `scripts/start-browser.command` launcher, explicitly configure the loopback endpoint, and open a new PTC conversation. The launcher uses a separate persistent Chrome profile and refuses to reuse a foreign listener on port 9222. It does not install a login daemon. `computer_use_bootstrap({}).browserConfigured` reports configuration, not connection health.
+
 Browser configuration and examples are in [the browser guide](docs/browser.md). The supported model path is `computer_browser` through the Harness tool pipeline, with declarative locator operations. Access is opt-in, profile-wide and bounded by Harness's normal tool policy; it is **not** per-domain authorization. CDP can access all tabs in the configured browser, so use an isolated profile.
 
 The lower-level `./browser` export is a developer library for testing or embedding, not a substitute for the Host tool approval pipeline.
@@ -94,8 +99,10 @@ See [validation results](docs/testing.md), [research sources](docs/research.md),
 
 ## Remove
 
+In Desktop, open the plugin details and choose **Uninstall**. For a non-Desktop CLI profile:
+
 ```sh
-dsh plugin --profile desktop remove dsh-computer-use-macos
+dsh plugin --profile computer-demo remove dsh-computer-use-macos
 ```
 
 Removal does not revoke macOS TCC permissions or erase upstream Harness application grants. Revoke those separately in System Settings and the Harness CUA permission page. No tokens, personal screenshots, session logs or browser profiles belong in this repository.

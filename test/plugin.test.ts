@@ -28,3 +28,23 @@ test('Host plugin registers bootstrap with the actual Harness author-schema comp
   apply(context as unknown as Parameters<typeof apply>[0], {})
   assert.deepEqual(registered, ['computer_use_bootstrap'])
 })
+
+
+test('bootstrap reports actual Host browser configuration without opening a browser', async () => {
+  for (const endpoint of ['', 'http://127.0.0.1:9222']) {
+    const registered: import('@deepseek-ai/dsh-tools').ToolDefinition[] = []
+    const context = {
+      tools: { register: (tool: import('@deepseek-ai/dsh-tools').ToolDefinition) => { registered.push(tool) } },
+      effect: () => {},
+      on: () => {},
+      systemPrompt: { section: () => {} },
+    }
+    apply(context as unknown as Parameters<typeof apply>[0], { configuredCDPEndpoint: endpoint })
+    const bootstrap = registered.find(tool => tool.name === 'computer_use_bootstrap')!
+    const result = await bootstrap.execute({}, {} as never)
+    assert.deepEqual(result, bridgeManifest({ configuredCDPEndpoint: endpoint }))
+    assert.equal(registered.some(tool => tool.name === 'computer_browser'), Boolean(endpoint))
+    assert.equal((result as {browserConfigured: boolean}).browserConfigured, Boolean(endpoint))
+    assert.equal((result as {packageVersion: string}).packageVersion, '0.1.1')
+  }
+})

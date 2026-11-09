@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Browser, BrowserContext, ElementHandle, Page } from 'playwright';
 
 /** A deliberately explicit connection: this adapter never launches a browser/profile. */
@@ -101,6 +102,7 @@ export function createBrowserApi(options: BrowserOptions = {}, sink: BrowserSink
   let connection: Promise<Browser> | undefined;
   let disposed = false;
   let nextId = 1;
+  const namespace = randomUUID();
   const pages = new Map<string, Page>();
   const ids = new WeakMap<Page, string>();
   const owned = new Set<Page>();
@@ -124,7 +126,7 @@ export function createBrowserApi(options: BrowserOptions = {}, sink: BrowserSink
   function remember(page: Page): string {
     let id = ids.get(page);
     if (!id) {
-      id = `tab-${nextId++}`;
+      id = `tab-${namespace}-${nextId++}`;
       ids.set(page, id);
       pages.set(id, page);
       page.once('close', () => { pages.delete(id!); owned.delete(page); retained.delete(page); surfaces.delete(page); });

@@ -251,6 +251,9 @@ export class BrowserToolDispatcher {
     if (request.method === 'locator') boundLocatorTimeout(validateLocatorRequest(request.params.locator), this.timeoutMs)
     signal.throwIfAborted()
     if (!this.enabled) throw new BrowserAdapterError('BROWSER_NOT_CONFIGURED', 'The host must opt in with configuredCDPEndpoint.')
+    const closing = this.activeOwner === undefined ? undefined : this.resources.get(this.activeOwner)?.closing
+    if (closing) await closing
+    signal.throwIfAborted()
     if (this.closed || this.retired.has(owner)) throw new BrowserAdapterError('BROWSER_DISPOSED', 'Create a new live Session.')
     if (this.activeOwner !== undefined && this.activeOwner !== owner) throw new BrowserAdapterError('BROWSER_BUSY', 'Another live Session owns this browser. Dispose it before using this browser from another Session.')
     let resource = this.resources.get(owner)
@@ -348,9 +351,14 @@ export class BrowserToolDispatcher {
     return { dispatched: true, verified: false }
   }
 
-  async disposeOwner(owner: object): Promise<void> {
+  /** Idle ends the lease, not the Agent. A later turn may claim a fresh connection. */
+  async releaseOwner(owner: object): Promise<void> { return this.closeOwner(owner, false) }
+
+  async disposeOwner(owner: object): Promise<void> { return this.closeOwner(owner, true) }
+
+  private async closeOwner(owner: object, retire: boolean): Promise<void> {
     const resource = this.resources.get(owner)
-    this.retired.add(owner)
+    if (retire) this.retired.add(owner)
     if (!resource) return
     if (resource.closing) return resource.closing
     resource.closed = true
@@ -397,9 +405,14 @@ export function installBrowserTool(ctx: Context, config: BrowserHostConfig): voi
   if (!dispatcher.enabled) return
   const owners = new WeakSet<object>()
   ctx.effect(() => () => dispatcher.dispose(), 'computer-browser.cleanup')
+  ctx.on('agent/status', ({ agent, status }) => {
+    if (status === 'idle' && agent.status === 'idle' && ctx.agents.get(agent.id) === agent) {
+      return dispatcher.releaseOwner(agent).catch(() => { /* Failed cleanup keeps the endpoint reserved. */ })
+    }
+  })
   const tool: ToolDefinition = {
     name: 'computer_browser',
-    description: 'Inspect or operate the explicitly configured Chromium browser. One live Session owns it. Use declarative locator steps; arbitrary evaluation is unavailable. Verify actions from fresh page state.',
+    description: 'Inspect or operate the explicitly configured Chromium browser. One running Agent owns it; idle releases the connection. Retain deliverable/handoff tabs before the turn ends and reselect tabs after resuming. Use declarative locator steps; arbitrary evaluation is unavailable. Verify actions from fresh page state.',
     parameters: { type: 'object', properties: { method: { type: 'string', enum: [...methods] }, params: { type: 'object' } }, required: ['method', 'params'], additionalProperties: false },
     output: { schema: {}, render: renderBrowserResult },
     async execute(args, execution: Readonly<ToolExecution>) {

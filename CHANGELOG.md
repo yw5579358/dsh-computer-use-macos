@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1 — 2026-11-09
+
+- Report `browserConfigured` from the real Host configuration in the bootstrap tool, without opening a browser.
+- Include a dedicated Chrome launcher with a persistent separate profile, loopback-only debugging and foreign-port refusal.
+- Explain Desktop JSON-index installation and PTC defaults; correct the rejected `--profile desktop` CLI examples.
+- Expand DOM setup/troubleshooting documentation and distinguish native-only capabilities from the browser tool.
+- Fix completed Desktop conversations retaining the browser lease: release on idle, allow later reacquisition, preserve marked tabs and reject stale tab references across connection generations.
+- Validate real Desktop DOM fill/click/readback, a Host-admitted screenshot and browser reuse from a second conversation; rerun 44 automated tests and 12 native fixture checks.
+
 ## 0.1.0 — 2026-11-06
 
 Initial community preview for macOS 14+ and DeepSeek Harness 0.2.2-rc.1.

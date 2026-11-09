@@ -81,7 +81,7 @@ test('Host tool route: semantic actions, image projection, cancellation and brow
       },
     }
     const bridge = connectBrowser(() => request => host.dispatch(request, owner, signal, projectedImage))
-    const tab = await bridge.getTab({ url: base + '/' })
+    let tab = await bridge.getTab({ url: base + '/' })
 
     await t.test('PTC bridge and Host execute locator fill/click and require fresh observation', async () => {
       await tab.playwright.getByLabel('Name').fill('Ada')
@@ -164,6 +164,29 @@ test('Host tool route: semantic actions, image projection, cancellation and brow
     await t.test('wire close protects a pre-existing page', async () => {
       await assert.rejects(tab.close(), /TAB_NOT_OWNED/)
       assert.equal(userPage.isClosed(), false)
+    })
+
+    await t.test('idle release permits another Agent and later resume without aliasing stale tab ids', async () => {
+      const kept = await bridge.createBrowserTab('chromium', base + '/?idle-kept')
+      const discarded = await bridge.createBrowserTab('chromium', base + '/?idle-temporary')
+      await kept.markHandoff()
+      await host.releaseOwner(owner)
+      const secondOwner = {}
+      const secondBridge = connectBrowser(() => request => host.dispatch(request, secondOwner, signal, projectedImage))
+      const reclaimed = await secondBridge.getTab({url:base+'/?idle-kept'})
+      assert.notEqual(reclaimed.id, kept.id)
+      assert.equal(await reclaimed.playwright.getByRole('button', {name:'Send fixture'}).count(), 1)
+      await host.releaseOwner(secondOwner)
+      const resumed = await bridge.getTab({url:base+'/?idle-kept'})
+      assert.notEqual(resumed.id, reclaimed.id)
+      await assert.rejects(kept.info(), /TAB_ACCESS_REQUIRED/)
+      await assert.rejects(discarded.info(), /TAB_ACCESS_REQUIRED/)
+      const urls = external!.contexts().flatMap(context => context.pages()).map(page => page.url())
+      assert.ok(urls.includes(base+'/?idle-kept'))
+      assert.ok(!urls.includes(base+'/?idle-temporary'))
+      assert.equal(child.exitCode, null)
+      assert.equal(userPage.isClosed(), false)
+      tab = await bridge.getTab({url:base+'/'})
     })
 
     const temporary = await bridge.createBrowserTab('chromium', base + '/?temporary')

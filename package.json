@@ -1,6 +1,6 @@
 {
   "name": "dsh-computer-use-macos",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "macOS Computer Use for DeepSeek Harness: native accessibility, screenshots and an opt-in CDP browser adapter with a familiar unified API",
   "type": "module",
   "main": "lib/index.js",
@@ -34,7 +34,8 @@
     "THIRD_PARTY_NOTICES.md",
     "SECURITY.md",
     "CHANGELOG.md",
-    "assets"
+    "assets",
+    "scripts/start-browser.command"
   ],
   "engines": {
     "node": ">=24.9.0",

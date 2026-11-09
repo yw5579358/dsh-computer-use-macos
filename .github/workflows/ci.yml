@@ -14,6 +14,8 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Require real browser fixture
         run: test -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      - name: Validate browser launcher syntax
+        run: zsh -n scripts/start-browser.command
       - run: npm run check
       - run: git diff --exit-code -- lib
       - run: npm pack --dry-run

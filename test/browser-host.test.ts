@@ -136,3 +136,31 @@ test('locator timeouts default to the Host budget and cannot extend or disable i
     assert.throws(() => boundLocatorTimeout(request, 500), /Locator timeout/)
   }
 })
+
+
+test('Host idle status releases the lease without retiring a resumable Agent', async () => {
+  const tools: import('@deepseek-ai/dsh-tools').ToolDefinition[] = []
+  const agents = new Map<string, {id: string; status: 'idle' | 'running'; ctx: {effect: () => void}}>()
+  let onStatus: (payload: {agent: object; status: string}) => unknown = () => {}
+  const context = {
+    tools: { register: (tool: import('@deepseek-ai/dsh-tools').ToolDefinition) => { tools.push(tool) } },
+    effect: () => {},
+    on: (_name: string, listener: typeof onStatus) => { onStatus = listener },
+    agents: { get: (id: string) => agents.get(id) },
+  }
+  installBrowserTool(context as unknown as Context, {configuredCDPEndpoint: 'http://127.0.0.1:1'})
+  const tool = tools[0]!
+  const first = {id: 'first', status: 'running' as 'idle' | 'running', ctx: {effect: () => {}}}
+  const second = {id: 'second', status: 'running' as 'idle' | 'running', ctx: {effect: () => {}}}
+  agents.set(first.id, first); agents.set(second.id, second)
+  const call = (agent: typeof first) => tool.execute({method:'listBrowsers',params:{}}, {agent,signal:signal()} as never)
+  await call(first)
+  await assert.rejects(call(second), /BROWSER_BUSY/)
+  await onStatus({agent:first,status:'idle'}) // A stale event cannot release a currently running Agent.
+  await assert.rejects(call(second), /BROWSER_BUSY/)
+  first.status='idle'; await onStatus({agent:first,status:'idle'})
+  await call(second)
+  second.status='idle'; await onStatus({agent:second,status:'idle'})
+  first.status='running'; await call(first)
+  first.status='idle'; await onStatus({agent:first,status:'idle'})
+})

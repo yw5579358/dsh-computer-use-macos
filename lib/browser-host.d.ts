@@ -42,7 +42,10 @@ export declare class BrowserToolDispatcher {
     constructor(config: BrowserHostConfig);
     dispatch(value: unknown, owner: object, signal: AbortSignal, screenshot?: BrowserScreenshotAdmission): Promise<JsonValue>;
     private run;
+    /** Idle ends the lease, not the Agent. A later turn may claim a fresh connection. */
+    releaseOwner(owner: object): Promise<void>;
     disposeOwner(owner: object): Promise<void>;
+    private closeOwner;
     dispose(): Promise<void>;
 }
 /** Images are rendered once as durable attachments; encoded source bytes never enter text. */

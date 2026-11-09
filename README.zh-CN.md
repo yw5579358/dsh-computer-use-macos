@@ -12,11 +12,18 @@
 
 需要 macOS 14+、Node 24.9+、Harness `0.2.2-rc.1`、支持图片输入的模型，以及用户为官方 `DSH Computer Use.app` 授予辅助功能和屏幕录制权限。系统授权与 Harness 逐应用授权是两层独立权限；插件不能自行授予。
 
+**桌面版：**在「插件」中启用实验性「自定义插件索引」，进入「发现」，添加[下方 JSON 索引](#插件发现)。选中本插件，核对仓库和固定提交后「安装 → 立即启用」。在「设置 → Agent 预设」中将新任务默认设为 **PTC 模式**；已有会话保留原模式。
+
+也可在桌面版「添加插件」对话框中选择发布的 tarball 或固定 Git 来源。**不要对桌面版使用 `dsh plugin --profile desktop`：该配置由 Electron 应用独占管理，CLI 会拒绝。**
+
+独立的非桌面 CLI profile 可使用：
+
 ```sh
-dsh plugin --profile desktop add ./dsh-computer-use-macos-0.1.0.tgz
+dsh plugin --profile computer-demo add ./dsh-computer-use-macos-0.1.1.tgz
+dsh --profile computer-demo --dump-config
 ```
 
-也可从本项目 GitHub 安装，建议固定发布 commit。仓库包含已构建的 `lib/`，不执行安装/prepare 脚本。一个 profile 只能启用一个 Computer Use provider。
+仓库包含已构建的 `lib/`，不执行安装/prepare 脚本。一个 profile 只能启用一个原生 Computer Use provider。
 
 在 PTC 会话中使用：
 
@@ -44,7 +51,9 @@ https://raw.githubusercontent.com/yw5579358/dsh-computer-use-macos/codex/initial
 
 ## 浏览器
 
-默认关闭。仅连接用户显式配置的 loopback CDP 浏览器，推荐独立临时 Profile。正式模型调用经过 Host 的 `computer_browser` 工具及 Harness 普通审批/日志流程。CDP 能访问该浏览器的所有标签，loopback 限制不等于站点级授权。详见 [浏览器配置](docs/browser.md)。
+DOM 功能已经实现；需要先指定浏览器连接，才注册工具。运行包内的 `scripts/start-browser.command`，在配置中显式填写 `http://127.0.0.1:9222`，再新建 PTC 会话。启动器使用独立、持久的 Chrome Profile，不安装开机常驻服务；关闭后可再次运行。端口若属于其他进程则拒绝复用。
+
+仅连接用户显式配置的 loopback CDP 浏览器。正式模型调用经过 Host 的 `computer_browser` 工具及 Harness 普通审批/日志流程。CDP 能访问该浏览器的所有标签，loopback 限制不等于站点级授权。详见 [浏览器配置](docs/browser.md)。
 
 不会自动接管日常 Chrome；清理只处理插件自己创建且没有标记保留的标签，不关闭外部浏览器进程。公开的 `./browser` 是开发者底层库，不替代 Host 审批。
 
@@ -59,4 +68,4 @@ npm pack
 
 浏览器测试使用独立 Chrome/Chromium 临时 Profile 与本地夹具。原生桌面测试需要用户系统授权，验证记录见 [测试报告](docs/testing.md)。已有 `0.2.1-rc.5` 不属于支持范围，应先升级，或使用独立 profile 测试。
 
-卸载：`dsh plugin --profile desktop remove dsh-computer-use-macos`。卸载不自动撤销 macOS 权限与 Harness 保存的应用授权，请分别在对应权限页面撤销。
+桌面版卸载：进入插件详情，点击「卸载」。非桌面 CLI profile 使用 `dsh plugin --profile computer-demo remove dsh-computer-use-macos`。卸载不自动撤销 macOS 权限与 Harness 保存的应用授权，请分别在对应权限页面撤销。
