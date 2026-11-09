@@ -1,71 +1,165 @@
-# DeepSeek Harness macOS Computer Use 插件
+# DeepSeek Harness macOS Computer Use
 
-[English](README.md) · [能力对照](docs/capabilities.md) · [安全说明](docs/security.md)
+[English](README.md) · [浏览器配置](docs/browser.md) · [测试报告](docs/testing.md)
 
-独立社区插件：复用 Harness 官方、MIT 开源的 macOS 原生 CUA，增加原创的 Codex 风格应用/窗口 API 和可选浏览器适配层。没有复制 OpenAI 的实现，也不代表 OpenAI 或 DeepSeek 官方。
+让 DeepSeek Harness 直接操作 Mac 应用和网页。新建一个 PTC 会话，说明要打开哪个应用、填写什么内容、点击哪个按钮，模型就可以读取界面、执行操作，再检查结果。
 
-支持应用与窗口选择、AX 界面树、窗口截图、点击、悬停、拖动、滚动、Unicode 输入、快捷键、值替换、文本选区、辅助动作及上游剪贴板保护流程。每次输入后要求重新观察，失败输入也不能自动重试。
+这个项目参考了 [Codex Computer Use](https://learn.chatgpt.com/docs/computer-use) 的使用方式：先选择应用或标签页，读取界面和截图，完成操作后重新观察。应用和窗口以对象的形式保留在 PTC 中，连续操作时可以沿用这些对象。
 
-**不宣称完整复刻 Codex 私有运行时。** 锁屏控制、OpenAI 浏览器扩展及其已有登录 Profile 集成、Appshots、浏览历史授权和 WebMCP 不在本版本能力内。
+底层使用 [DeepSeek Harness 的原生 CUA](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/experimental/cua-macos) （`@deepseek-ai/dsh-cua` 与 `@deepseek-ai/dsh-experimental-cua-macos`）处理 macOS 窗口、辅助功能和输入；网页部分通过 [Playwright](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp) 连接专用 Chrome，按网页元素的角色、标签和文本定位。
 
-## 环境与安装
+在这两层能力之上，插件补上了统一的应用/窗口接口、PTC 模块加载、操作后的状态检查、浏览器连接管理和截图回传。授权、调用日志和图片附件都沿用 Harness 的处理流程。
 
-需要 macOS 14+、Node 24.9+、Harness `0.2.2-rc.1`、支持图片输入的模型，以及用户为官方 `DSH Computer Use.app` 授予辅助功能和屏幕录制权限。系统授权与 Harness 逐应用授权是两层独立权限；插件不能自行授予。
+## 使用效果
 
-**桌面版：**在「插件」中启用实验性「自定义插件索引」，进入「发现」，添加[下方 JSON 索引](#插件发现)。选中本插件，核对仓库和固定提交后「安装 → 立即启用」。在「设置 → Agent 预设」中将新任务默认设为 **PTC 模式**；已有会话保留原模式。
+**电脑应用**：选择应用和窗口，读取辅助功能树、获取窗口截图，完成点击、中文输入、快捷键、滚动、文本选择和粘贴。
 
-也可在桌面版「添加插件」对话框中选择发布的 tarball 或固定 Git 来源。**不要对桌面版使用 `dsh plugin --profile desktop`：该配置由 Electron 应用独占管理，CLI 会拒绝。**
+**网页**：读取页面内容，填写输入框、点击按钮、提取表格，通过 DOM 定位元素，也可以获取当前页面截图。
 
-独立的非桌面 CLI profile 可使用：
+任务结束后，浏览器连接会释放，后续会话可以重新接入。需要留给用户检查的页面，可以在任务中标记保留。
+
+`0.1.1` 已在真实 Harness 桌面版中跑通中文填表、按钮点击、结果读回、截图和跨会话连接。本机与 GitHub CI 的 **44 项自动测试**全部通过，另有 **12 项原生桌面检查**通过。具体环境和记录见[测试报告](docs/testing.md)。
+
+## 安装
+
+运行环境：
+
+- macOS 14+
+- DeepSeek Harness `0.2.2-rc.1`
+- Node.js 24.9+；截图需要使用支持图片输入的模型
+- 为 `DSH Computer Use.app` 开启辅助功能和屏幕录制权限
+
+### 桌面版
+
+1. 打开「插件」，启用实验性功能「自定义插件索引」。
+2. 进入「发现」，添加下面的 JSON 地址。
+3. 选择「macOS 电脑操作」，核对版本和来源，点击「安装 → 立即启用」。
+4. 在「设置 → Agent 预设」中选择 **PTC 模式**，然后新建会话。
+
+```text
+https://raw.githubusercontent.com/yw5579358/dsh-computer-use-macos/codex/initial-release/plugin-index.json
+```
+
+也可以通过「添加插件」安装 [Release](https://github.com/yw5579358/dsh-computer-use-macos/releases) 中的压缩包。索引中的每个版本都固定到具体 Git 提交，仓库包含构建好的 `lib/`。
+
+升级第三方插件时，先备份 profile 配置，再在桌面版中卸载旧版、安装新版。已有会话会保留原来的模式。
+
+### CLI profile
+
+独立 CLI profile 使用：
 
 ```sh
 dsh plugin --profile computer-demo add ./dsh-computer-use-macos-0.1.1.tgz
 dsh --profile computer-demo --dump-config
 ```
 
-仓库包含已构建的 `lib/`，不执行安装/prepare 脚本。一个 profile 只能启用一个原生 Computer Use provider。
+桌面版的 `desktop` profile 由应用管理，安装和卸载都在插件页面完成。同一个 profile 使用一个原生 Computer Use provider。
 
-在 PTC 会话中使用：
+## 直接用自然语言操作
+
+电脑控制：
+
+```text
+使用 Computer Use 打开计算器，计算 123 × 456，读取界面上的结果。
+```
+
+```text
+使用电脑控制打开文本编辑，新建文稿，输入标题“本周计划”和三条待办事项。保留窗口供我检查。
+```
+
+浏览器 DOM：
+
+```text
+使用浏览器 DOM 打开 http://localhost:3000，检查导航链接和主要按钮，截图记录结果。完成后保留标签页供我查看。
+```
+
+```text
+使用浏览器 DOM 打开指定后台，等我登录后读取当前页的表格，统计各状态的记录数量。
+```
+
+把网址、应用名和任务内容换成自己的目标即可。需要保留网页时，在指令里加上「完成后保留标签页」。
+
+## 启用浏览器 DOM
+
+先启动专用 Chrome：
+
+```sh
+"$HOME/.dsh/profiles/desktop/node_modules/dsh-computer-use-macos/scripts/start-browser.command"
+```
+
+启动器使用 `$HOME/.dsh/browser-dom/profile` 保存浏览器数据，调试连接位于 `127.0.0.1:9222`。需要登录的网站，在这个窗口中登录；关闭浏览器后，再次运行启动器即可。
+
+在 profile 的 `cordis.patch.yml` 中配置：
+
+```yaml
+- id: macos-computer-use-compat
+  name: dsh-computer-use-macos
+  config:
+    configuredCDPEndpoint: http://127.0.0.1:9222
+    browserTimeoutMs: 15000
+    browserMaxElements: 400
+```
+
+保存后新建 PTC 会话。配置项、页面保留和连接排查见[浏览器文档](docs/browser.md)。
+
+## 在 PTC 中调用
+
+原生应用：
 
 ```js
 const entry = await tools.computer_use_bootstrap({})
 const { connectComputerUse } = await import(entry.nativeBridgeUrl)
-const cua = connectComputerUse(() => tools.cua, { text: value => console.log(value) })
+const cua = connectComputerUse(() => tools.cua, {
+  text: value => console.log(value),
+})
 const app = await cua.getApp('Calculator')
-// 使用刚返回的界面编号；操作后重新读取。
+await app.getAXState()
+// elementIndex 使用本次界面观察中的控件编号。
 await app.click(elementIndex)
 await app.getAXState()
 ```
 
-原生截图已经通过 Host 附件流程进入模型上下文，返回对象保留字节和尺寸，不能重复上传。滚动使用 `scroll({x,y,deltaLinesX,deltaLinesY})`，不是 Codex 的页数签名。保留变量需使用持久 PTC 模式。快捷键和粘贴应先确认目标应用焦点。原始中文 HTML 在部分 AppKit 控件中存在编码限制，优先使用纯文本；详见 [实测范围](docs/testing.md)。
+浏览器：
 
-## 插件发现
-
-在实验功能 **Custom plugin indexes** 中添加可信索引：
-
-```text
-https://raw.githubusercontent.com/yw5579358/dsh-computer-use-macos/codex/initial-release/plugin-index.json
+```js
+const { connectBrowser } = await import(entry.browserBridgeUrl)
+const browser = connectBrowser(() => tools.computer_browser)
+const tab = await browser.createBrowserTab('chromium', 'http://localhost:3000')
+await tab.playwright.getByRole('button', { name: '继续', exact: true }).click()
+await tab.getAXState()
+await tab.markHandoff()
 ```
 
-索引将安装来源固定到测试过的 commit；这是自建社区索引，不是官方精选收录。
+每次调用通过 getter 获取当前的工具绑定。输入后重新读取状态；浏览器任务进入空闲后，下次操作先重新选择标签页。截图由 Harness 作为附件送入模型上下文。
 
-## 浏览器
-
-DOM 功能已经实现；需要先指定浏览器连接，才注册工具。运行包内的 `scripts/start-browser.command`，在配置中显式填写 `http://127.0.0.1:9222`，再新建 PTC 会话。启动器使用独立、持久的 Chrome Profile，不安装开机常驻服务；关闭后可再次运行。端口若属于其他进程则拒绝复用。
-
-仅连接用户显式配置的 loopback CDP 浏览器。正式模型调用经过 Host 的 `computer_browser` 工具及 Harness 普通审批/日志流程。CDP 能访问该浏览器的所有标签，loopback 限制不等于站点级授权。详见 [浏览器配置](docs/browser.md)。
-
-不会自动接管日常 Chrome；清理只处理插件自己创建且没有标记保留的标签，不关闭外部浏览器进程。公开的 `./browser` 是开发者底层库，不替代 Host 审批。
-
-## 测试与发布
+## 开发与文档
 
 ```sh
 npm ci --ignore-scripts
 npm run check
-npm run test:browser
 npm pack
 ```
 
-浏览器测试使用独立 Chrome/Chromium 临时 Profile 与本地夹具。原生桌面测试需要用户系统授权，验证记录见 [测试报告](docs/testing.md)。已有 `0.2.1-rc.5` 不属于支持范围，应先升级，或使用独立 profile 测试。
+浏览器测试使用临时 Chrome Profile 和本地合成页面；原生测试使用自建 AppKit 窗口。
 
-桌面版卸载：进入插件详情，点击「卸载」。非桌面 CLI profile 使用 `dsh plugin --profile computer-demo remove dsh-computer-use-macos`。卸载不自动撤销 macOS 权限与 Harness 保存的应用授权，请分别在对应权限页面撤销。
+- [API 与能力说明](docs/capabilities.md)
+- [浏览器配置](docs/browser.md)
+- [测试报告](docs/testing.md)
+- [参考资料与设计](docs/research.md)
+- [参与开发](CONTRIBUTING.md)
+- [安全说明](docs/security.md)
+- [第三方许可](THIRD_PARTY_NOTICES.md)
+
+## 卸载
+
+桌面版进入插件详情，点击「卸载」。独立 CLI profile 使用：
+
+```sh
+dsh plugin --profile computer-demo remove dsh-computer-use-macos
+```
+
+macOS 权限和 Harness 中保存的应用授权，可分别在系统设置及 Computer Use 权限页面管理。
+
+## License
+
+[MIT](LICENSE)
